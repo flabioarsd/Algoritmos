@@ -19,8 +19,8 @@
 #include <cmath>
 #include <limits.h>
 #include<fstream>
-#define ITERACIONES 1000
-#define alfa 0.5
+#define ITERACIONES 99999
+#define alfa 0.5 // 0.7 
 using namespace std;
 
 typedef struct{
@@ -161,7 +161,7 @@ vector<Auto> grasp(vector<Auto> autos, vector<Cliente> clientes,vector<vector<in
         
         sort(it_clietes.begin(),it_clietes.end(),cmpCliente);
         sort(it_autos.begin(),it_autos.end(),cmpAuto);
-        while(!it_clietes.empty()){
+        while(!it_clietes.empty() and !it_autos.empty()){
             /* Elejimos el cliente */
             int c_beta,c_tau,c_rcl,c_indrcl;
            // imprimeClientes(it_clietes);
@@ -211,10 +211,10 @@ int dijkstra(vector<vector<int>>mapa,int ini,int fin){
             }
         }
         // Si no hay nodo accesible, terminamos
-        if (dist[nodoActual] == INT_MAX) break;
+        if (dist[nodoActual]==INT_MAX) break;
 
         // Marcamos el nodo como visitado
-        visitado[nodoActual] = true;
+        visitado[nodoActual]=true;
 
         // Actualizamos las distancias a los nodos vecinos
         for (int vecino = 0; vecino < n; vecino++) {
@@ -247,16 +247,18 @@ void procesaCliente(Auto &autos,Cliente cli,double &hora){
 void graspRutaMinima(Auto &autos,vector<vector<int>>mapa){
     //para seleccionar los vecinos uso dijktra
     Auto mejorRespuesta;
+    int id=autos.id_auto;
     double horadeldia=(double)autos.horaIngreso;
     int mejordistanciaRecorrida=INT_MAX;
     for(int i=0;i<ITERACIONES;i++){
+        Auto auxAuto=autos;
         int distanciaRecorrida;
-        while(not autos.listaPendientes.empty() and horadeldia<=autos.horaSalida){
+        while(not auxAuto.listaPendientes.empty() and horadeldia<=auxAuto.horaSalida){
             vector<Nodo>vecinos;
-            for(int i=0;i<autos.listaPendientes.size();i++){
+            for(int i=0;i<auxAuto.listaPendientes.size();i++){
                 Nodo aux;
-                int minimadistancia=dijkstra(mapa,autos.posicion,autos.listaPendientes[i].posicion);
-                aux.cliente=autos.listaPendientes[i];
+                int minimadistancia=dijkstra(mapa,auxAuto.posicion,auxAuto.listaPendientes[i].posicion);
+                aux.cliente=auxAuto.listaPendientes[i];
                 aux.distancia=minimadistancia;
                 vecinos.push_back(aux);
             }
@@ -268,17 +270,16 @@ void graspRutaMinima(Auto &autos,vector<vector<int>>mapa){
             rcl=round(beta+alfa*(tao-beta));
             posRand=verificaVecinos(rcl,vecinos);
             indrcl=rand()%posRand;
-
             //Procesas el vecino osea un cliente, luego con este procesado lo verificas en la lista y lo quitas
             distanciaRecorrida=vecinos[indrcl].distancia*2; //ida y vuelta
-            horadeldia+=(double)vecinos[indrcl].distancia/(double)autos.velocidad;
-            autos.distanciaTotalRecorrida+=distanciaRecorrida;
-            autos.posicion=vecinos[indrcl].cliente.posicion;
-            procesaCliente(autos,vecinos[indrcl].cliente,horadeldia);
+            horadeldia+=(double)vecinos[indrcl].distancia/(double)auxAuto.velocidad;
+            auxAuto.distanciaTotalRecorrida+=distanciaRecorrida;
+            auxAuto.posicion=vecinos[indrcl].cliente.posicion;
+            procesaCliente(auxAuto,vecinos[indrcl].cliente,horadeldia);
         }
         if(distanciaRecorrida<mejordistanciaRecorrida){
             mejordistanciaRecorrida=distanciaRecorrida;
-            mejorRespuesta=autos;
+            mejorRespuesta=auxAuto;
         }
     }
     autos=mejorRespuesta;
